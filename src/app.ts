@@ -1,17 +1,16 @@
-import * as dotenv from 'dotenv';
-dotenv.config()
+import * as dotenv from "dotenv";
+dotenv.config();
 
-import { MongoClient } from 'mongodb';
-import { faker } from '@faker-js/faker';
-import { Customer } from './interface/customer.interface';
+import { MongoClient } from "mongodb";
+import { faker } from "@faker-js/faker";
+import { Customer } from "./interface/customer.interface";
 
-const {
-  DB_URI,
-  CUSTOMERS_COLLECTION = 'customers'
-} = process.env;
+const { DB_URI, CUSTOMERS_COLLECTION = "customers" } = process.env;
 
 const client = new MongoClient(DB_URI as string);
-const customersRepository = client.db().collection<Customer>(CUSTOMERS_COLLECTION as string);
+const customersRepository = client
+  .db()
+  .collection<Customer>(CUSTOMERS_COLLECTION as string);
 
 const createRandomCustomer = (): Customer => ({
   firstName: faker.person.firstName(),
@@ -24,8 +23,8 @@ const createRandomCustomer = (): Customer => ({
     postcode: faker.location.zipCode(),
     city: faker.location.city(),
     state: faker.location.state(),
-    country: faker.location.country()
-  }
+    country: faker.location.country(),
+  },
 });
 
 setInterval(async () => {
@@ -37,7 +36,11 @@ setInterval(async () => {
   try {
     await customersRepository.insertMany(customers);
 
-    console.log(`NEW CUSTOMERS SUCCESSFULLY INSERTED WITH IDS:\n${customers.map(customer => `   ${customer._id}`).join('\n')}`);
+    console.log(
+      `NEW CUSTOMERS SUCCESSFULLY INSERTED WITH IDS:\n${customers
+        .map((customer) => `   ${customer._id}`)
+        .join("\n")}`
+    );
   } catch (err) {
     console.log(`CUSTOMERS INSERTING ERROR ${err}`);
   }

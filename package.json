@@ -1,0 +1,34 @@
+{
+  "name": "fundraiseup-test",
+  "version": "1.0.0",
+  "description": "Backend test task",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "start:app": "npx tsc && node build/app.js",
+    "start:sync": "npx tsc && node build/sync.js",
+    "start:reindex": "npx tsc && node build/sync.js --full-reindex",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/balthazzar/fundraiseup-test.git"
+  },
+  "author": "Andrey Koreshkov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/balthazzar/fundraiseup-test/issues"
+  },
+  "homepage": "https://github.com/balthazzar/fundraiseup-test#readme",
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.1",
+    "@types/dotenv": "^8.2.0",
+    "@types/mongodb": "^4.0.7",
+    "@types/node": "^20.2.3",
+    "typescript": "^5.0.4"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "mongodb": "^5.5.0"
+  }
+}

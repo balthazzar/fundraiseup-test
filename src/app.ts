@@ -1,16 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { MongoClient } from "mongodb";
 import { faker } from "@faker-js/faker";
 import { Customer } from "./interface/customer.interface";
-
-const { DB_URI, CUSTOMERS_COLLECTION = "customers" } = process.env;
-
-const client = new MongoClient(DB_URI as string);
-const customersRepository = client
-  .db()
-  .collection<Customer>(CUSTOMERS_COLLECTION as string);
+import { customersRepository } from "./util/db.util";
 
 const createRandomCustomer = (): Customer => ({
   firstName: faker.person.firstName(),

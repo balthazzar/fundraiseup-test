@@ -2,57 +2,51 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { writeFile } from "fs/promises";
-import { Collection, AnyBulkWriteOperation, ResumeToken } from "mongodb";
+import { AnyBulkWriteOperation, ResumeToken, MongoClient } from "mongodb";
 import { Customer } from "../interface/customer.interface";
-import { anonymiseCustomer } from "./anonymise.util";
+import { existsSync, readFileSync } from "fs";
 
-const { DB_METADATA_FILENAME = "mongo-meta.json", BUNDLE_MAX_SIZE = 1000 } =
-  process.env;
+const {
+  DB_URI,
+  CUSTOMERS_COLLECTION = "customers",
+  CUSTOMERS_ANONYMISED_COLLECTION = "customers_anonymised",
+  DB_METADATA_FILENAME = "mongo-meta.json",
+} = process.env;
 
-export const commit = async (
-  commitRepository: Collection<Customer>,
+const client = new MongoClient(DB_URI as string);
+const database = client.db();
+
+export const customersRepository =
+  database.collection<Customer>(CUSTOMERS_COLLECTION);
+export const customersAnonymisedRepository = database.collection<Customer>(
+  CUSTOMERS_ANONYMISED_COLLECTION
+);
+
+export const getResumeToken = () => {
+  existsSync(DB_METADATA_FILENAME) &&
+    JSON.parse(readFileSync(DB_METADATA_FILENAME, { encoding: "utf-8" }));
+
+  let restoredResumeToken: ResumeToken;
+
+  try {
+    restoredResumeToken =
+      existsSync(DB_METADATA_FILENAME) &&
+      JSON.parse(readFileSync(DB_METADATA_FILENAME, { encoding: "utf-8" }));
+  } catch (err) {
+    console.log(`ERROR OCCURED DURING RESTORE RESUME TOKEN: ${err}`);
+  }
+
+  return restoredResumeToken;
+};
+
+export const commitAnonymisedCustomers = async (
   opsBundle: AnyBulkWriteOperation<Customer>[],
   resumeToken: ResumeToken
 ) => {
   try {
-    await commitRepository.bulkWrite(opsBundle);
+    await customersAnonymisedRepository.bulkWrite(opsBundle);
     await writeFile(DB_METADATA_FILENAME, JSON.stringify(resumeToken));
   } catch (err) {
     console.log(`ERROR OCCURED DURING ANONYMISED DATA UPDATE: ${err}`);
   }
-};
-
-export const fullReindex = async (
-  customersRepository: Collection<Customer>,
-  customersAnonymisedRepository: Collection<Customer>
-) => {
-  console.log(`----- START DATA TRANSFER -----`);
-
-  const customersCursor = customersRepository.find({});
-
-  let customersForTransfer: AnyBulkWriteOperation<Customer>[] = [];
-
-  for await (const customer of customersCursor) {
-    customersForTransfer.push({
-      updateOne: {
-        filter: { _id: customer._id },
-        update: { $set: anonymiseCustomer(customer) },
-        upsert: true,
-      },
-    });
-
-    if (customersForTransfer.length >= +BUNDLE_MAX_SIZE) {
-      await customersAnonymisedRepository.bulkWrite(customersForTransfer);
-      console.log(
-        `${customersForTransfer.length} DOCUMENTS SUCCESSFULLY TRANSFERED`
-      );
-
-      customersForTransfer = [];
-    }
-  }
-
-  await customersAnonymisedRepository.bulkWrite(customersForTransfer);
-  console.log(
-    `${customersForTransfer.length} DOCUMENTS SUCCESSFULLY TRANSFERED`
-  );
 };

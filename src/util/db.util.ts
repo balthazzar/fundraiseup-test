@@ -23,9 +23,6 @@ export const customersAnonymisedRepository = database.collection<Customer>(
 );
 
 export const getResumeToken = () => {
-  existsSync(DB_METADATA_FILENAME) &&
-    JSON.parse(readFileSync(DB_METADATA_FILENAME, { encoding: "utf-8" }));
-
   let restoredResumeToken: ResumeToken;
 
   try {

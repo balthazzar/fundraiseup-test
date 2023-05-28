@@ -44,25 +44,16 @@ const fullReindex = async () => {
     }
   }
 
-  await customersAnonymisedRepository.bulkWrite(customersForTransfer);
-  console.log(
-    `${customersForTransfer.length} DOCUMENTS SUCCESSFULLY TRANSFERED`
-  );
+  if (customersForTransfer.length) {
+    await customersAnonymisedRepository.bulkWrite(customersForTransfer);
+    console.log(
+      `${customersForTransfer.length} DOCUMENTS SUCCESSFULLY TRANSFERED`
+    );
+  }
 };
 
-const sync = () => {
-  const restoredResumeToken: ResumeToken = getResumeToken();
+const sync = (watchOptions: ChangeStreamOptions) => {
   let opsBundle: AnyBulkWriteOperation<Customer>[] = [];
-
-  const watchOptions: ChangeStreamOptions = {};
-
-  if (restoredResumeToken) {
-    console.log("----- RESUME SYNC FROM STORED POINT -----");
-
-    watchOptions.resumeAfter = restoredResumeToken;
-  } else {
-    console.log("----- RESUME POINT NOT FOUND. START NEW SYNC -----");
-  }
 
   const stream = customersRepository.watch([], watchOptions);
 
@@ -87,7 +78,7 @@ const sync = () => {
             filter: { _id: changeEvent.documentKey._id },
             update: {
               $set: anonymiseCustomer(
-                changeEvent.updateDescription.updatedFields || {}
+                changeEvent.updateDescription.updatedFields as Partial<Customer>
               ),
             },
           },
@@ -127,7 +118,19 @@ if (forceFullReindex) {
   })();
 } else {
   try {
-    sync();
+    const restoredResumeToken: ResumeToken = getResumeToken();
+
+    const watchOptions: ChangeStreamOptions = {};
+
+    if (restoredResumeToken) {
+      console.log("----- RESUME SYNC FROM STORED POINT -----");
+
+      watchOptions.resumeAfter = restoredResumeToken;
+    } else {
+      console.log("----- RESUME POINT NOT FOUND. START NEW SYNC -----");
+    }
+
+    sync(watchOptions);
   } catch (err) {
     console.log(`ERROR OCCURED DURING DB WATCH: ${err}`);
   }
